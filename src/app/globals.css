@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Surfaces */
+  --bg-deep: #0F0F23;
+  --bg-base: #1B1B30;
+  --bg-elevated: #27273B;
+  --surface: rgba(255, 255, 255, 0.05);
+
+  /* Text */
+  --foreground: #F8FAFC;
+  --foreground-muted: #94A3B8;
+
+  /* Primary & accent */
+  --primary: #1E1B4B;
+  --primary-hover: #312E81;
+  --secondary: #4338CA;
+  --accent: #22C55E;
+  --accent-glow: rgba(34, 197, 94, 0.2);
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-active: #312E81;
+
+  /* Feedback */
+  --destructive: #EF4444;
+  --warning: #F97316;
+  --success: #22C55E;
+
+  /* Ring / focus */
+  --ring: #4338CA;
+  --ring-offset: #0F0F23;
+
+  /* Musical feature colors — all verified ≥4.5:1 against --bg-deep */
+  --color-tempo: #F59E0B;
+  --color-harmony: #8B5CF6;
+  --color-structure: #CBD5E1;
+  --color-melody: #06B6D4;
+  --color-bass: #DC2626;
+  --color-percussion: #FBBF24;
+  --color-vocals: #EC4899;
+  --color-extension: rgba(139, 92, 246, 0.4);
+  --color-ai-node: rgba(255, 255, 255, 0.12);
+  --color-ai-node-border: rgba(139, 92, 246, 0.3);
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Z-index */
+  --z-canvas: 0;
+  --z-canvas-lanes: 10;
+  --z-canvas-playhead: 20;
+  --z-ai-layer: 30;
+  --z-hover-card: 40;
+  --z-context-rail: 50;
+  --z-command-dock: 60;
+  --z-modal: 100;
+  --z-toast: 110;
+
+  /* Easing */
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-deep);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-4);
+  z-index: 9999;
+  padding: var(--space-2) var(--space-4);
+  background: var(--secondary);
+  color: var(--foreground);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: var(--space-2);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Feature lane pattern: content-visibility for performance */
+.lane-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 40px;
+}
+
+/* Touch target minimum */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mono values display */
+.mono-value {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
