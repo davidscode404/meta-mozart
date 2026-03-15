@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   X,
@@ -38,25 +38,25 @@ const STEM_META: Record<
     label: "Bass",
     icon: <Speaker className="w-6 h-6" />,
     color: "var(--color-bass)",
-    gestureHint: "Pinch -> filter",
+    gestureHint: "Pinch high -> loud, low -> quiet",
   },
   vocals: {
     label: "Vocals",
     icon: <Mic className="w-6 h-6" />,
     color: "var(--color-vocals)",
-    gestureHint: "Raise/Lower -> gain",
+    gestureHint: "Open hand high -> loud, low -> quiet",
   },
   drums: {
     label: "Drums",
     icon: <Drum className="w-6 h-6" />,
     color: "var(--color-percussion)",
-    gestureHint: "Fist -> mute",
+    gestureHint: "Fist -> mute, release -> unmute",
   },
   other: {
-    label: "Other",
+    label: "Piano",
     icon: <Music className="w-6 h-6" />,
     color: "var(--color-harmony)",
-    gestureHint: "Spread -> width",
+    gestureHint: "Open hand high -> loud, low -> quiet",
   },
   guitar: {
     label: "Guitar",
@@ -80,6 +80,7 @@ export default function PerformMode() {
   const {
     setMode,
     setStemVolume,
+    setStemMute,
     toggleStemMute,
     toggleStemSolo,
     setMainVolume,
@@ -90,6 +91,7 @@ export default function PerformMode() {
     useTrack();
   const [handActive, setHandActive] = useState(true);
   const [gesture, setGesture] = useState<HandGesture | null>(null);
+  const prevGestureRef = useRef<HandGesture["gesture"]>("none");
 
   const stemControls: StemControl[] = useMemo(() => {
     if (!analysis || !stemUrls) return [];
@@ -133,19 +135,26 @@ export default function PerformMode() {
       setGesture(g);
       const ids = stemControls.map((s) => s.id);
       if (g.gesture === "pinch" && ids.includes("bass")) {
-        setStemVolume("bass", 1 - Math.min(1, g.pinchDistance * 12));
+        setStemVolume("bass", 1 - g.palmY);
       }
-      if (g.gesture === "open" && ids.includes("vocals")) {
-        setStemVolume("vocals", 1 - g.palmY);
+      if (g.gesture === "open") {
+        // Control any stem that isn't bass/drums/vocals (piano, other, etc.)
+        const pianoStem = ids.find((id) => id !== "bass" && id !== "drums" && id !== "vocals");
+        if (pianoStem) {
+          setStemVolume(pianoStem, 1 - g.palmY);
+        }
       }
-      if (g.gesture === "open" && g.spreadX > 0 && ids.includes("other")) {
-        setStemVolume("other", Math.min(1, g.spreadX * 3));
+      // Fist = drums off, anything else = drums on (transition-only to avoid per-frame spam)
+      if (ids.includes("drums")) {
+        if (g.gesture === "fist" && prevGestureRef.current !== "fist") {
+          setStemMute("drums", true);
+        } else if (g.gesture !== "fist" && prevGestureRef.current === "fist") {
+          setStemMute("drums", false);
+        }
       }
-      if (g.gesture === "fist" && ids.includes("drums")) {
-        toggleStemMute("drums");
-      }
+      prevGestureRef.current = g.gesture;
     },
-    [setStemVolume, stemControls, toggleStemMute]
+    [setStemMute, setStemVolume, stemControls]
   );
 
   const adjustStem = useCallback(
@@ -232,6 +241,37 @@ export default function PerformMode() {
           </div>
         </section>
 
+        <section className="max-w-4xl mx-auto">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-4 md:p-5">
+            <p className="text-xs uppercase tracking-[0.5px] text-[var(--foreground-muted)] mb-3">
+              Gesture Controls
+            </p>
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[var(--bg-deep)]/60">
+                <span className="text-lg leading-none mt-0.5">&#9994;</span>
+                <div>
+                  <p className="font-semibold text-[var(--foreground)]">Drums</p>
+                  <p className="text-xs text-[var(--foreground-muted)]">Make a fist to mute drums. Open your hand to bring them back.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[var(--bg-deep)]/60">
+                <span className="text-lg leading-none mt-0.5">&#129295;</span>
+                <div>
+                  <p className="font-semibold text-[var(--foreground)]">Bass</p>
+                  <p className="text-xs text-[var(--foreground-muted)]">Pinch thumb & index. Raise hand = louder bass, lower hand = quieter.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[var(--bg-deep)]/60">
+                <span className="text-lg leading-none mt-0.5">&#9995;</span>
+                <div>
+                  <p className="font-semibold text-[var(--foreground)]">Piano</p>
+                  <p className="text-xs text-[var(--foreground-muted)]">Open hand. Raise = louder, lower = quieter.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="max-w-6xl mx-auto">
           <div className="flex flex-wrap items-start justify-center gap-10">
             <div className="flex flex-col items-center gap-4">
@@ -290,12 +330,12 @@ export default function PerformMode() {
             {stemControls.map((stem, idx) => {
               const val = stem.volume;
               const muted = stem.muted;
+              const isPianoStem = stem.id !== "bass" && stem.id !== "drums" && stem.id !== "vocals";
               const isActive =
                 gesture?.gesture !== "none" &&
                 ((stem.id === "bass" && gesture?.gesture === "pinch") ||
-                  (stem.id === "vocals" && gesture?.gesture === "open") ||
                   (stem.id === "drums" && gesture?.gesture === "fist") ||
-                  (stem.id === "other" && gesture?.gesture === "open"));
+                  (isPianoStem && gesture?.gesture === "open"));
 
               return (
                 <div key={stem.id} className="flex flex-col items-center gap-4">

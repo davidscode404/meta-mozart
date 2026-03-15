@@ -227,7 +227,7 @@ export default function StemMixer() {
     toggleStemSolo,
     setMainVolume,
     toggleMainMute,
-    setCurrentTime,
+    seekTo,
   } = useTrackActions();
   const reducedMotion = useReducedMotion();
 
@@ -244,8 +244,8 @@ export default function StemMixer() {
   );
 
   const handleSeek = useCallback(
-    (t: number) => setCurrentTime(t),
-    [setCurrentTime]
+    (t: number) => seekTo(t),
+    [seekTo]
   );
 
   if (stemIds.length === 0) {

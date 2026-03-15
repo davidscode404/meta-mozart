@@ -5,7 +5,7 @@ import type { HandLandmarker, HandLandmarkerResult } from "@mediapipe/tasks-visi
 
 export interface HandGesture {
   landmarks: { x: number; y: number; z: number }[] | null;
-  gesture: "open" | "fist" | "pinch" | "point" | "none";
+  gesture: "fist" | "pinch" | "open" | "none";
   pinchDistance: number;
   palmY: number;
   spreadX: number;
@@ -76,6 +76,7 @@ export default function HandTracker({
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+        setError(null);
         setCameraReady(true);
       }
     } catch {
@@ -129,18 +130,10 @@ export default function HandTracker({
         ) / 4;
       const isFist = avgDist < 0.15;
 
-      // Point: index extended, others curled
-      const indexExt = Math.hypot(indexTip.x - wrist.x, indexTip.y - wrist.y) > 0.2;
-      const othersCurled =
-        [middleTip, ringTip, pinkyTip].every(
-          (tip) => Math.hypot(tip.x - wrist.x, tip.y - wrist.y) < 0.18
-        );
-      const isPoint = indexExt && othersCurled;
-
+      // Priority: pinch (most specific) → fist → open (hand detected but not pinch/fist)
       let gesture: HandGesture["gesture"] = "open";
-      if (isFist) gesture = "fist";
-      else if (pinchDist < 0.06) gesture = "pinch";
-      else if (isPoint) gesture = "point";
+      if (pinchDist < 0.06) gesture = "pinch";
+      else if (isFist) gesture = "fist";
 
       return {
         landmarks: lm.map((l) => ({ x: l.x, y: l.y, z: l.z })),

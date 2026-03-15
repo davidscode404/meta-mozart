@@ -45,6 +45,7 @@ interface TrackState {
   separationReport: SeparationReport | null;
   playing: boolean;
   currentTime: number;
+  seekGeneration: number;
   duration: number;
   activeLayers: Set<FeatureType>;
   expandedInsight: string | null;
@@ -68,6 +69,7 @@ type TrackAction =
   | { type: "SET_SEPARATION_REPORT"; payload: SeparationReport | null }
   | { type: "SET_STEM_VOLUME"; payload: { stemId: string; volume: number } }
   | { type: "TOGGLE_STEM_MUTE"; payload: { stemId: string } }
+  | { type: "SET_STEM_MUTE"; payload: { stemId: string; muted: boolean } }
   | { type: "TOGGLE_STEM_SOLO"; payload: { stemId: string } }
   | { type: "SET_MAIN_VOLUME"; payload: number }
   | { type: "TOGGLE_MAIN_MUTE" }
@@ -75,6 +77,7 @@ type TrackAction =
   | { type: "TOGGLE_PLAY" }
   | { type: "SET_PLAYING"; payload: boolean }
   | { type: "SET_CURRENT_TIME"; payload: number }
+  | { type: "SEEK_TO"; payload: number }
   | { type: "TOGGLE_LAYER"; payload: FeatureType }
   | { type: "SET_EXPANDED_INSIGHT"; payload: string | null }
   | { type: "TOGGLE_CONTEXT_PANEL" }
@@ -100,6 +103,7 @@ const initialState: TrackState = {
   separationReport: null,
   playing: false,
   currentTime: 0,
+  seekGeneration: 0,
   duration: 0,
   activeLayers: DEFAULT_LAYERS,
   expandedInsight: null,
@@ -179,6 +183,18 @@ function trackReducer(state: TrackState, action: TrackAction): TrackState {
         },
       };
     }
+    case "SET_STEM_MUTE": {
+      const { stemId, muted } = action.payload;
+      const current = state.stemMix[stemId] ?? { volume: 1, muted: false, solo: false };
+      if (current.muted === muted) return state;
+      return {
+        ...state,
+        stemMix: {
+          ...state.stemMix,
+          [stemId]: { ...current, muted },
+        },
+      };
+    }
     case "TOGGLE_STEM_SOLO": {
       const { stemId } = action.payload;
       const current = state.stemMix[stemId] ?? { volume: 1, muted: false, solo: false };
@@ -211,6 +227,8 @@ function trackReducer(state: TrackState, action: TrackAction): TrackState {
       return { ...state, playing: action.payload };
     case "SET_CURRENT_TIME":
       return { ...state, currentTime: action.payload };
+    case "SEEK_TO":
+      return { ...state, currentTime: action.payload, seekGeneration: state.seekGeneration + 1 };
     case "TOGGLE_LAYER": {
       const next = new Set(state.activeLayers);
       if (next.has(action.payload)) {
@@ -314,6 +332,11 @@ export function useTrackActions() {
       dispatch({ type: "TOGGLE_STEM_MUTE", payload: { stemId } }),
     [dispatch]
   );
+  const setStemMute = useCallback(
+    (stemId: string, muted: boolean) =>
+      dispatch({ type: "SET_STEM_MUTE", payload: { stemId, muted } }),
+    [dispatch]
+  );
   const toggleStemSolo = useCallback(
     (stemId: string) =>
       dispatch({ type: "TOGGLE_STEM_SOLO", payload: { stemId } }),
@@ -341,6 +364,10 @@ export function useTrackActions() {
   );
   const setCurrentTime = useCallback(
     (t: number) => dispatch({ type: "SET_CURRENT_TIME", payload: t }),
+    [dispatch]
+  );
+  const seekTo = useCallback(
+    (t: number) => dispatch({ type: "SEEK_TO", payload: t }),
     [dispatch]
   );
   const toggleLayer = useCallback(
@@ -378,6 +405,7 @@ export function useTrackActions() {
     setSeparationReport,
     setStemVolume,
     toggleStemMute,
+    setStemMute,
     toggleStemSolo,
     setMainVolume,
     toggleMainMute,
@@ -385,6 +413,7 @@ export function useTrackActions() {
     togglePlay,
     setPlaying,
     setCurrentTime,
+    seekTo,
     toggleLayer,
     setExpandedInsight,
     toggleContextPanel,

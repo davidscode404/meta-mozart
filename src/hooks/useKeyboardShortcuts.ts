@@ -9,7 +9,7 @@ export function useKeyboardShortcuts() {
   const { playing, currentTime, analysis, mode } = useTrack();
   const {
     togglePlay,
-    setCurrentTime,
+    seekTo,
     toggleLayer,
     setMode,
     setExpandedInsight,
@@ -35,11 +35,11 @@ export function useKeyboardShortcuts() {
           break;
         case "ArrowLeft":
           e.preventDefault();
-          setCurrentTime(Math.max(0, currentTime - (e.shiftKey ? 1 : 5)));
+          seekTo(Math.max(0, currentTime - (e.shiftKey ? 1 : 5)));
           break;
         case "ArrowRight":
           e.preventDefault();
-          setCurrentTime(
+          seekTo(
             Math.min(duration, currentTime + (e.shiftKey ? 1 : 5))
           );
           break;
@@ -77,7 +77,7 @@ export function useKeyboardShortcuts() {
     analysis?.duration,
     mode,
     togglePlay,
-    setCurrentTime,
+    seekTo,
     toggleLayer,
     setMode,
     setExpandedInsight,

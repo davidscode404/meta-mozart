@@ -13,7 +13,7 @@ import GhostExtension from "./GhostExtension";
 
 export default function TrackCanvas() {
   const { analysis, uploadState, duration, activeLayers } = useTrack();
-  const { setCurrentTime } = useTrackActions();
+  const { seekTo } = useTrackActions();
   const reducedMotion = useReducedMotion();
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -22,9 +22,9 @@ export default function TrackCanvas() {
       if (!timelineRef.current || !duration) return;
       const rect = timelineRef.current.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      setCurrentTime(pct * duration);
+      seekTo(pct * duration);
     },
-    [duration, setCurrentTime]
+    [duration, seekTo]
   );
 
   if (uploadState !== "complete" || !analysis) return null;
